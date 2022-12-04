@@ -48,17 +48,22 @@ homicide_data=
   drop_na(victim_age)
 ```
 Created a new variable `city_state` by concatenating city and state, seperateing with ','.
+Omitted cities Dallas, TX; Phoenix, AZ; and Kansas City, MO– these don’t report victim race. 
+Also omitted Tulsa, AL – this is a data entry mistake.
+
 ```{r}
 logistic_Baltimore = 
   homicide_data %>% 
   filter(city_state == "Baltimore, MD") %>% 
   glm(solved ~ victim_age + victim_sex + victim_race, data = ., family = binomial()) 
 ```
+Use glm on the to fit a lofisitc regression model with resolved vs unresolved as the outcome and victim age, sex and race as predictors. Save the output of glm as an R object;
 
 ```{r}
 logistic_Baltimore %>% 
   broom::glance()
 ```
+Take a glance at the saved result.
 
 ```{r}
 logistic_Baltimore %>% 
@@ -72,6 +77,7 @@ logistic_Baltimore %>%
   select(term, estimate, OR, lower_ci, upper_ci) %>% 
   knitr::kable(digits = 3)
 ```
+Use broom tidy to tidy up the result. Get the odds ratio of case being solved comparing those with sex as male to those with sex as female and the 95% CI for it.
 
 ```{r}
 logistic_all_cities = function(dataset) {
@@ -86,7 +92,9 @@ logistic_all_cities = function(dataset) {
   select(term, estimate, OR, lower_ci, upper_ci)
 }
 ```
-Create a function to be applied to the dataset in the next steps for each of the cities.
+Create a function to fit the regression model and get the odds ratio and CI similar to the process we have done to Baltimore.
+It is going to be applied to the data set in the next steps for each of the cities.
+
 ```{r}
 logit_result_cities = 
   homicide_data %>% 
@@ -97,6 +105,7 @@ logit_result_cities =
   unnest(result) %>% 
   select(-df) 
 ```
+
 
 ```{r}
 
@@ -115,8 +124,8 @@ logit_result_cities %>%
   theme(axis.text.x = element_text(
       angle = 90)) 
 ```
-
-Run glm on each city_state and get the Odds Ratio of case being solved comparing those with sex as male to those with sex as female, and also get the CI of that OR. Using geom_error bar to show the OR and the CI together in one plot.
+Run glm on each city_state and get the Odds Ratio of case being solved comparing those with sex as male to those with sex as female, and also get the CI of that OR. Using geom_error bar to show the OR and the CI together in one plot. 
+We can see that New York, NY has the smallest odds ratio of solving homicides comparing those identified as male to those identified as female. And Albuquerque, NM has the highest odds ratio of solving homicides comparing those identidied as male to those identified as female.
 
 # Question 3 
 ```{r}
@@ -134,11 +143,11 @@ birthweight_data =
 ```{r}
 proposed_model = lm(bwt ~ fincome+blength+gaweeks, data = birthweight_data)
 ```
-
+The proposed model I have is using using family monthly income (in hundreds, rounded), length at birth and gestational age as predictors.
 ```{r}
 proposed_model %>%
   broom::tidy() %>% 
-  knitr::kable(digits = 4)
+  knitr::kable(digits = 3)
 ```
 
 ```{r}
@@ -189,3 +198,4 @@ cv_df %>%
     y = "RMSEs"
   )
 ```
+We can see the model compare_1 that using length at birth and gestational age as predictors (main effects only) has the largest RMSEs. And the model compare_2 that using head circumference, length, sex, and all interactions (including the three-way interaction) between these has the smallest RMSE of the three models.
