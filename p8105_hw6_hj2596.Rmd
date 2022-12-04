@@ -26,3 +26,25 @@ scale_fill_discrete = scale_fill_viridis_d
 
 theme_set(theme_minimal() + theme(legend.position = "bottom"))
 ```
+
+# Problem 2
+
+## Import and tidy up the dataset
+```{r}
+homicide_data = read_csv("./data/homicide-data.csv")
+```
+This dataset has `r nrow(homicide_data)` rows and `r ncol(homicide_data)` columns. The columns(variables) are `r names(homicide_data)` and each row is a homicide incident.
+```{r}
+homicide_data=
+  homicide_data %>%
+  mutate(
+    city_state = str_c(city, state, sep = ", "),
+    solved = ifelse(disposition == "Closed by arrest", 1, 0)
+    ) %>%
+    filter(city_state != "Dallas, Tx", city_state != "Phoenix, AZ", city_state != "Kansas City, MO", city_state != "Tulsa, AL") %>% 
+  filter(victim_race %in% c("Black", "White")) %>% 
+  drop_na(victim_age)
+```
+Created a new variable `city_state` by concatenating city and state, seperateing with ','.
+```
+
