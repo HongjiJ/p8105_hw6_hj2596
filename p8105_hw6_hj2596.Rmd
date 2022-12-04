@@ -7,7 +7,8 @@ output: github_document
 ```{r setup, include=FALSE}
 library(tidyverse)
 library(viridis)
-
+library(purrr)
+library(modelr)
 knitr::opts_chunk$set(
 	echo = TRUE,
 	warning = FALSE,
@@ -68,7 +69,7 @@ logistic_Baltimore %>%
     upper_ci = exp(estimate+1.96*std.error)
   ) %>% 
   filter(term == "victim_sexMale") %>%
-  select(term, Log_OR = estimate, OR, lower_ci, upper_ci) %>% 
+  select(term, estimate, OR, lower_ci, upper_ci) %>% 
   knitr::kable(digits = 3)
 ```
 
@@ -82,7 +83,7 @@ logistic_all_cities = function(dataset) {
       lower_ci = exp(estimate - 1.96 * std.error),
       upper_ci = exp(estimate + 1.96 * std.error)) %>%
   filter(term == "victim_sexMale") %>%
-  select(term, Log_OR = estimate, OR, lower_ci, upper_ci)
+  select(term, estimate, OR, lower_ci, upper_ci)
 }
 ```
 Create a function to be applied to the dataset in the next steps for each of the cities.
@@ -103,6 +104,19 @@ logit_result_cities %>%
   knitr::kable(digits = 3)
 ```
 
+```{r}
+logit_result_cities %>% 
+  mutate(
+    city_state = fct_reorder(city_state, OR)
+  ) %>% 
+  ggplot(aes(x = city_state, y = OR)) +
+  geom_point() +
+  geom_errorbar(aes(ymin = lower_ci, ymax = upper_ci)) +
+  theme(axis.text.x = element_text(
+      angle = 90)) 
+```
+
+Run glm on each city_state and get the Odds Ratio of case being solved comparing those with sex as male to those with sex as female, and also get the CI of that OR. Using geom_error bar to show the OR and the CI together in one plot.
 
 # Question 3 
 ```{r}
@@ -136,9 +150,42 @@ proposed_plot =
   geom_point(alpha = 0.5, cex=0.3) +
   labs(
     title = "Residuals vs. Fitted values",
-    x = "fitted_values",
+    x = "predicted values",
     y = "residuals")
 proposed_plot
 ```
 
+```{r}
+cv_df = crossv_mc(birthweight_data, 100)
+cv_df =
+  cv_df %>% 
+  mutate(
+    train = map(train, as_tibble),
+    test = map(test, as_tibble))
+cv_df = 
+  cv_df %>% 
+  mutate(proposed = map(train, ~lm(bwt ~ fincome+blength+gaweeks, data = birthweight_data)),
+         compare_1 = map(train, ~lm(bwt ~ blength+gaweeks, data = birthweight_data)),
+         compare_2  = map(train, ~lm(bwt ~ bhead + blength + babysex+ bhead*babysex + blength*babysex + bhead*blength + bhead*blength*babysex, data = birthweight_data))) %>%
+  mutate(rmse_proposed = map2_dbl(proposed, test, ~rmse(model = .x, data = .y)),
+         rmse_compare_1 = map2_dbl(compare_1, test, ~rmse(model = .x, data = .y)),
+         rmse_compare_2 = map2_dbl(compare_2, test, ~rmse(model = .x, data = .y)))
+cv_df
+```
 
+```{r}
+cv_df %>% 
+  select(starts_with("rmse")) %>% 
+  pivot_longer(
+    everything(),
+    names_to = "model", 
+    values_to = "rmse",
+    names_prefix = "rmse_") %>% 
+  ggplot(aes(x = model, y = rmse)) + 
+  geom_violin() +
+  labs(
+    title = "RMSEs of The 3 Models",
+    x = "Models",
+    y = "RMSEs"
+  )
+```
