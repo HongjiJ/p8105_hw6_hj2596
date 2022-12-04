@@ -89,6 +89,7 @@ The point of this is not to say you should always use the bootstrap -- it's poss
 homicide_data = read_csv("./data/homicide-data.csv")
 ```
 This dataset has `r nrow(homicide_data)` rows and `r ncol(homicide_data)` columns. The columns(variables) are `r names(homicide_data)` and each row is a homicide incident.
+
 ```{r}
 homicide_data=
   homicide_data %>%
@@ -159,7 +160,6 @@ logit_result_cities =
   unnest(result) %>% 
   select(-df) 
 ```
-
 
 ```{r}
 
