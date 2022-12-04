@@ -67,6 +67,78 @@ logistic_Baltimore %>%
     lower_ci = exp(estimate-1.96*std.error),
     upper_ci = exp(estimate+1.96*std.error)
   ) %>% 
+  filter(term == "victim_sexMale") %>%
+  select(term, Log_OR = estimate, OR, lower_ci, upper_ci) %>% 
   knitr::kable(digits = 3)
 ```
+
+```{r}
+logistic_all_cities = function(dataset) {
+    dataset %>%
+    glm(solved ~ victim_age + victim_sex + victim_race, data = ., family = binomial()) %>% 
+    broom::tidy() %>% 
+    mutate(
+      OR = exp(estimate),
+      lower_ci = exp(estimate - 1.96 * std.error),
+      upper_ci = exp(estimate + 1.96 * std.error)) %>%
+  filter(term == "victim_sexMale") %>%
+  select(term, Log_OR = estimate, OR, lower_ci, upper_ci)
+}
+```
+Create a function to be applied to the dataset in the next steps for each of the cities.
+```{r}
+logit_result_cities = 
+  homicide_data %>% 
+  nest(df = -city_state) %>% 
+  mutate(
+    result = map(df, logistic_all_cities)
+  ) %>% 
+  unnest(result) %>% 
+  select(-df) 
+```
+
+```{r}
+
+logit_result_cities %>% 
+  knitr::kable(digits = 3)
+```
+
+
+# Question 3 
+```{r}
+birthweight_data = 
+  read_csv("./data/birthweight.csv") %>% 
+    mutate(
+    frace = as.factor(frace),
+    malform = as.factor(malform),
+    mrace = as.factor(mrace),
+    babysex = as.factor(babysex)
+    ) %>%
+  drop_na()
+```
+
+```{r}
+proposed_model = lm(bwt ~ fincome+blength+gaweeks, data = birthweight_data)
+```
+
+```{r}
+proposed_model %>%
+  broom::tidy() %>% 
+  knitr::kable(digits = 4)
+```
+
+```{r}
+proposed_plot =
+  birthweight_data %>% 
+  modelr::add_residuals(proposed_model) %>%
+  modelr::add_predictions(proposed_model) %>% 
+  ggplot(aes(x = pred, y = resid)) + 
+  geom_point(alpha = 0.5, cex=0.3) +
+  labs(
+    title = "Residuals vs. Fitted values",
+    x = "fitted_values",
+    y = "residuals")
+proposed_plot
+```
+
 
