@@ -39,12 +39,34 @@ homicide_data=
   homicide_data %>%
   mutate(
     city_state = str_c(city, state, sep = ", "),
-    solved = ifelse(disposition == "Closed by arrest", 1, 0)
+    solved = ifelse(disposition == "Closed by arrest", 1, 0),
+    victim_age = as.numeric(victim_age)
     ) %>%
     filter(city_state != "Dallas, Tx", city_state != "Phoenix, AZ", city_state != "Kansas City, MO", city_state != "Tulsa, AL") %>% 
   filter(victim_race %in% c("Black", "White")) %>% 
   drop_na(victim_age)
 ```
 Created a new variable `city_state` by concatenating city and state, seperateing with ','.
+```{r}
+logistic_Baltimore = 
+  homicide_data %>% 
+  filter(city_state == "Baltimore, MD") %>% 
+  glm(solved ~ victim_age + victim_sex + victim_race, data = ., family = binomial()) 
+```
+
+```{r}
+logistic_Baltimore %>% 
+  broom::glance()
+```
+
+```{r}
+logistic_Baltimore %>% 
+  broom::tidy() %>%
+  mutate(OR = exp(estimate)) %>%
+  mutate(
+    lower_ci = exp(estimate-1.96*std.error),
+    upper_ci = exp(estimate+1.96*std.error)
+  ) %>% 
+  knitr::kable(digits = 3)
 ```
 
